@@ -1,54 +1,50 @@
-from typing import Tuple
+from langchain import PromptTemplate
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import LLMChain
+from third_parties.linkedin import scrape_linkedin_profile
+from third_parties.twitter import scrape_user_tweets
 from agents.linkedin_lookup_agent import lookup as linkedin_lookup_agent
 from agents.twitter_lookup_agent import lookup as twitter_lookup_agent
-from chains.custom_chains import (
-    get_summary_chain,
-    get_interests_chain,
-    get_ice_breaker_chain,
-)
-from third_parties.linkedin import scrape_linkedin_profile
 
-from third_parties.twitter import scrape_user_tweets
-from output_parsers import (
-    summary_parser,
-    topics_of_interest_parser,
-    ice_breaker_parser,
-    Summary,
-    IceBreaker,
-    TopicOfInterest,
-)
+import os
+
+# Set the OpenAI API key as an environment variable
 
 
-def ice_break_with(name: str) -> Tuple[Summary, IceBreaker, TopicOfInterest, str]:
-    linkedin_username = linkedin_lookup_agent(name=name)
-    linkedin_data = scrape_linkedin_profile(linkedin_profile_url=linkedin_username)
-
-    twitter_username = twitter_lookup_agent(name=name)
-    tweets = scrape_user_tweets(username=twitter_username)
-
-    summary_chain = get_summary_chain()
-    summary_and_facts = summary_chain.run(
-        information=linkedin_data, twitter_posts=tweets
-    )
-    summary_and_facts = summary_parser.parse(summary_and_facts)
-
-    interests_chain = get_interests_chain()
-    interests = interests_chain.run(information=linkedin_data, twitter_posts=tweets)
-    interests = topics_of_interest_parser.parse(interests)
-
-    ice_breaker_chain = get_ice_breaker_chain()
-    ice_breakers = ice_breaker_chain.run(
-        information=linkedin_data, twitter_posts=tweets
-    )
-    ice_breakers = ice_breaker_parser.parse(ice_breakers)
-
-    return (
-        summary_and_facts,
-        interests,
-        ice_breakers,
-        linkedin_data.get("profile_pic_url"),
-    )
-
+name = "Elan Mask"
 
 if __name__ == "__main__":
-    pass
+    print("Hello")
+    print(os.environ["OPENAI_API_KEY"])
+
+
+linkedin_profile_url = linkedin_lookup_agent(name="Dharmesh Baraskat , Hexaware")
+linkedin_data= scrape_linkedin_profile(linkedin_profile_url=linkedin_profile_url)
+
+username = twitter_lookup_agent(name=name)
+tweetData =scrape_user_tweets(username=username,num_tweets=100)
+
+summary_template = """
+    given the linkedin information {linkedin_infromation} and twitter {twitter_information} about a person from I want you to create:
+    1. a short summary 
+    2. two instersting fact about them
+"""
+
+summary_prompt_template = PromptTemplate(
+    input_variables=["linkedin_infromation","twitter_information"], template=summary_template
+)
+
+llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
+chain = LLMChain(llm=llm, prompt=summary_prompt_template)
+
+# linkedin_data= scrape_linkedin_profile(
+#     linkedin_profile_url="https://www.linkedin.com/in/dharmesh-baraskar-8634b038/"
+#     )
+
+
+#print(linkedin_data)
+
+# print(chain.run(infromation=infromation))
+
+print(chain.run(linkedin_infromation=linkedin_data,twtter_information=tweetData))
+#print(TweeterUserName)

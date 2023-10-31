@@ -10,7 +10,7 @@ def scrape_linkedin_profile(linkedin_profile_url: str):
 
     response = requests.get(
         api_endpoint, params={"url": linkedin_profile_url}, headers=header_dic
-    )
+    )   
 
     data = response.json()
     data = {

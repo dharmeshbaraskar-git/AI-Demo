@@ -5,6 +5,8 @@ import tweepy
 
 logger = logging.getLogger("twitter")
 
+
+
 twitter_client = tweepy.Client(
     bearer_token=os.environ["TWITTER_BEARER_TOKEN"],
     consumer_key=os.environ["TWITTER_API_KEY"],
@@ -14,25 +16,30 @@ twitter_client = tweepy.Client(
 )
 
 
+
 def scrape_user_tweets(username, num_tweets=5):
     """
     Scrapes a Twitter user's original tweets (i.e., not retweets or replies) and returns them as a list of dictionaries.
     Each dictionary has three fields: "time_posted" (relative to now), "text", and "url".
     """
-    user_id = twitter_client.get_user(username=username).data.id
-    tweets = twitter_client.get_users_tweets(
-        id=user_id, max_results=num_tweets, exclude=["retweets", "replies"]
-    )
+  
+    auth = tweepy.OAuthHandler(twitter_client.consumer_key, twitter_client.consumer_secret)
+
+    auth.set_access_token(twitter_client.access_token,twitter_client.access_token_secret)
+    userAPI = tweepy.API(auth)
+    user=userAPI.get_user(screen_name = username)
 
     tweet_list = []
-    for tweet in tweets.data:
+    
+    for tweet in user:
         tweet_dict = {}
         tweet_dict["text"] = tweet["text"]
-        tweet_dict["url"] = f"https://twitter.com/{username}/status/{tweet.id}"
+        tweet_dict["url"] = f"https://twitter.com/{username}/status/{user.id}"
         tweet_list.append(tweet_dict)
 
-    return tweet_list
+
+    return  user.screen_name
 
 
-if __name__ == "__main__":
-    print(scrape_user_tweets(username="hwchase17"))
+# if __name__ == "__main__":
+    #print(scrape_user_tweets(username="hwchase17"))
